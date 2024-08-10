@@ -16,6 +16,22 @@ pipeline {
                 sh 'docker push naqsatra/numeric-app:""$GIT_COMMIT""'
               }
             }
-          }  
+          } 
+        stage('Integration Tests - DEV') {
+      steps {
+        script {
+          try {
+            withKubeConfig([credentialsId: 'kubeconfig']) {
+              sh "bash integration-test.sh"
+            }
+          } catch (e) {
+            withKubeConfig([credentialsId: 'kubeconfig']) {
+              sh "kubectl -n default rollout undo deploy ${deploymentName}"
+            }
+            throw e
+          }
+        }
+      }
+    }     
     }
 }
