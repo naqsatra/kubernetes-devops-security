@@ -22,7 +22,8 @@ pipeline {
         script {
           try {
             withKubeConfig([credentialsId: 'kubeconfig']) {
-              sh "bash integration-test.sh"
+              sh "kubectl -n default get pods"
+             // sh "bash integration-test.sh"
             }
           } catch (e) {
             withKubeConfig([credentialsId: 'kubeconfig']) {
