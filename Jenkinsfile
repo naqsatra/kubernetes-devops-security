@@ -1,6 +1,13 @@
 pipeline {
   agent any
-
+  environment {
+    deploymentName = "devsecops"
+    containerName = "devsecops-container"
+    serviceName = "devsecops-svc"
+    imageName = "naqsatra/numeric-app:${GIT_COMMIT}"
+    applicationURL="http://devsecops-dev.eastus.cloudapp.azure.com"
+    applicationURI="/increment/99"
+  }
   stages {
       stage('Build Artifact') {
             steps {
@@ -17,22 +24,38 @@ pipeline {
               }
             }
           } 
-        stage('Integration Tests - DEV') {
+    stage('K8S Deployment - DEV') {
       steps {
-        script {
-          try {
+        parallel(
+          "Deployment": {
             withKubeConfig([credentialsId: 'kubeconfig']) {
-              sh "kubectl -n default get pods"
-             // sh "bash integration-test.sh"
+              sh "bash k8s-deployment.sh"
             }
-          } catch (e) {
+          },
+          "Rollout Status": {
             withKubeConfig([credentialsId: 'kubeconfig']) {
-              sh "kubectl -n default rollout undo deploy ${deploymentName}"
+              sh "bash k8s-deployment-rollout-status.sh"
             }
-            throw e
           }
-        }
+        )
       }
-    }     
+    }
+    //     stage('Integration Tests - DEV') {
+    //   steps {
+    //     script {
+    //       try {
+    //         withKubeConfig([credentialsId: 'kubeconfig']) {
+    //          // sh "kubectl -n default get pods"
+    //           sh "bash integration-test.sh"
+    //         }
+    //       } catch (e) {
+    //         withKubeConfig([credentialsId: 'kubeconfig']) {
+    //           sh "kubectl -n default rollout undo deploy ${deploymentName}"
+    //         }
+    //         throw e
+    //       }
+    //     }
+    //   }
+    // }     
     }
 }
